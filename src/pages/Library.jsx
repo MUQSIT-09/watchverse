@@ -15,6 +15,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { DndContext, closestCenter } from "@dnd-kit/core";
+import { normalizeRuntime } from "../../utils/stats";
 import {
   SortableContext,
   verticalListSortingStrategy,
@@ -1601,58 +1602,61 @@ const updateEpisodeProgress = async (showId, { season = null, episode = null, ne
   });
 };
 
-  const finishSeason = (showId) => {
-  setAllShows((prev) => {
-    const updated = prev.map((show) => {
-      if (show.id !== showId) return show;
+    const finishSeason = (showId) => {
+    setAllShows((prev) => {
+      const updated = prev.map((show) => {
+        if (show.id !== showId && show.tmdbId !== showId) return show;
 
-      const finishedSeason = show.currentSeason;
-      const now = new Date().toISOString();
+        const finishedSeason = show.currentSeason;
+        const now = new Date().toISOString();
 
-      // Ensure we have a seasonHistory object
-      const seasonHistory = {
-        ...(show.seasonHistory || {}),
-        // mark the season that was just finished
-        [finishedSeason]: {
-          ...(show.seasonHistory?.[finishedSeason] || {}),
-          startedAt:
-            show.seasonHistory?.[finishedSeason]?.startedAt ||
-            show.startedAt ||
-            null,
-          completedAt: now,
-        },
-      };
-
-      // prepare next season entry (create key with null startedAt so UI can update it later)
-      const nextSeason = (show.currentSeason || 1) + 1;
-      if (!seasonHistory[nextSeason]) {
-        seasonHistory[nextSeason] = {
-          ...(seasonHistory[nextSeason] || {}),
-          startedAt: null,
-          completedAt: null,
+        // Ensure we have a seasonHistory object
+        const seasonHistory = {
+          ...(show.seasonHistory || {}),
+          // mark the season that was just finished
+          [finishedSeason]: {
+            ...(show.seasonHistory?.[finishedSeason] || {}),
+            startedAt:
+              show.seasonHistory?.[finishedSeason]?.startedAt ||
+              show.startedAt ||
+              null,
+            completedAt: now,
+          },
         };
+
+        // prepare next season entry (create key with null startedAt so UI can update it later)
+        const nextSeason = (show.currentSeason || 1) + 1;
+        if (!seasonHistory[nextSeason]) {
+          seasonHistory[nextSeason] = {
+            ...(seasonHistory[nextSeason] || {}),
+            startedAt: null,
+            completedAt: null,
+          };
+        }
+
+              return {
+          ...show,
+          waitingForSeasonStart: true,
+          currentEpisodeStarted: false,
+          currentSeason: nextSeason,
+          currentEpisode: 1,
+          currentTime: 0,
+          lastWatchedAt: now,
+            seasonHistory,
+          };
+      });
+
+      const changed = updated.find(
+    (x) => x.id === showId || x.tmdbId === showId
+  );
+
+      if (changed) {
+        addToLibrary(changed).catch(console.error);
       }
 
-      return {
-        ...show,
-        waitingForSeasonStart: true,
-        currentSeason: nextSeason,
-        currentEpisode: 1,
-        currentTime: 0,
-        lastWatchedAt: now,
-        seasonHistory,
-      };
+      return updated;
     });
-
-    const changed = updated.find((x) => x.id === showId);
-
-    if (changed) {
-      addToLibrary(changed);
-    }
-
-    return updated;
-  });
-};
+  };
 
 
   const updateTime = (showId, seconds) => {

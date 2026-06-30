@@ -16,6 +16,7 @@ const RecentlyReleasedSlider = ({
         //   key={`${show.id}-${show.media_type || "item"}`}
         key={`${show.media_type || "item"}-${show.tmdbId}`}
           item={show}
+          clickable={false}
         />
 
       ))}

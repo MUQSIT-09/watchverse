@@ -12,6 +12,7 @@ const TopMovieSlider = ({ shows = [] }) => {
         <PosterCard
           key={`movie-${show.tmdbId}`}
           item={show}
+          clickable={false}
         />
 
       ))}

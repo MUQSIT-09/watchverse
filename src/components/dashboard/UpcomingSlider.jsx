@@ -12,6 +12,7 @@ const UpcomingSlider = ({ shows = [] }) => {
         <PosterCard
           key={`upcoming-${show.tmdbId}`}
           item={show}
+          clickable={false}
         />
 
       ))}

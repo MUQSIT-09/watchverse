@@ -9,11 +9,11 @@ const TrendingSlider = ({ shows = [] }) => {
 
       {shows.map((show) => (
 
-        <PosterCard
+       <PosterCard
   key={`${show.media_type}-${show.tmdbId}`}
   item={show}
+  clickable={false}
 />
-
       ))}
 
     </SliderRow>

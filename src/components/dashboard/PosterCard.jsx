@@ -1,11 +1,13 @@
 import { useNavigate } from "react-router-dom";
 
-const PosterCard = ({ item }) => {
+const PosterCard = ({ item, clickable = true }) => {
   const navigate = useNavigate();
 
   const handleClick = () => {
-    const tab = item.status === "rewatch" ? "watching" : item.status;
-    navigate(`/library?tab=${tab}&show=${item.id ?? item.tmdbId}`);
+  if (!clickable) return;
+
+  const tab = item.status === "rewatch" ? "watching" : item.status;
+  navigate(`/library?tab=${tab}&show=${item.id ?? item.tmdbId}`);
   };
 
   // 1. Safe Image Path Checking
@@ -40,14 +42,14 @@ const PosterCard = ({ item }) => {
   return (
     <div
       onClick={handleClick}
-      className="
-        min-w-[180px]
-        md:min-w-[220px]
-        lg:min-w-[260px]
-        snap-start
-        group
-        cursor-pointer
-      "
+      className={`
+  min-w-[180px]
+  md:min-w-[220px]
+  lg:min-w-[260px]
+  snap-start
+  group
+  ${clickable ? "cursor-pointer" : "cursor-default"}
+`}
     >
       <div
         className="

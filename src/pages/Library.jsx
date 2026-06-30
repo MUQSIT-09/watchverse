@@ -14,8 +14,15 @@ import { formatTime, getRuntimeSeconds } from "../utils/formatTime";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
-import { DndContext, closestCenter } from "@dnd-kit/core";
 import { normalizeRuntime } from "../utils/stats";
+import { 
+  DndContext, 
+  closestCenter, 
+  PointerSensor, 
+  TouchSensor, 
+  useSensor, 
+  useSensors 
+} from "@dnd-kit/core";
 import {
   SortableContext,
   verticalListSortingStrategy,
@@ -125,20 +132,10 @@ const ShowDetails = ({
   const [showEpisodeRatingPad, setShowEpisodeRatingPad] = useState(false);
   const [showEpisodeReviewPad, setShowEpisodeReviewPad] = useState(false);
 
-  // Season Review States (season rating removed)
-  const [showSeasonReviewPad, setShowSeasonReviewPad] = useState(false);
-  const [seasonReviewMode, setSeasonReviewMode] = useState("edit");
-  const [seasonReview, setSeasonReview] = useState("");
-
   useEffect(() => {
     setMovieReview(show.userReview || "");
   }, [show.id]);
 
-  useEffect(() => {
-    setSeasonReview(
-      show.seasonHistory?.[selectedSeason]?.review || ""
-    );
-  }, [selectedSeason, show.id]);
 
   const isMovie = show?.type === "movie";
 
@@ -914,43 +911,6 @@ const ShowDetails = ({
         </div>
       )}
 
-      {/* Season Review Modal */}
-      {showSeasonReviewPad && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-          <div className="w-full max-w-sm rounded-2xl bg-slate-900 p-5">
-            <div className="mb-4 flex justify-between text-white">
-              <h4 className="font-semibold text-xs sm:text-sm">📝 Season {selectedSeason} Review</h4>
-              <button onClick={() => setShowSeasonReviewPad(false)}>✖</button>
-            </div>
-
-            {seasonReviewMode === "view" ? (
-              <div className="min-h-[120px] whitespace-pre-wrap rounded-lg bg-slate-800 p-3 text-slate-300 text-xs sm:text-sm">
-                {show.seasonHistory?.[selectedSeason]?.review || "No review yet"}
-              </div>
-            ) : (
-              <textarea
-                rows={6}
-                value={seasonReview}
-                onChange={(e) => setSeasonReview(e.target.value)}
-                className="w-full rounded-lg bg-slate-800 p-3 text-white text-sm outline-none focus:ring-1 focus:ring-cyan-500"
-              />
-            )}
-
-            {seasonReviewMode === "edit" && (
-              <button
-                onClick={() => {
-                  updateSeasonReview(show.id, selectedSeason, seasonReview);
-                  setShowSeasonReviewPad(false);
-                }}
-                className="mt-4 w-full rounded-lg bg-green-600 py-2 text-white font-semibold text-xs sm:text-sm"
-              >
-                Save
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-
       {/* Movie Rating Modal */}
       {showMovieRatingPad && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 p-4">
@@ -1110,7 +1070,7 @@ function SortableShowItem({ show, index, deleteShowForever }) {
         onClick={() => deleteShowForever(show.id)}
         className="rounded-xl px-3 py-2 text-sm text-red-400 transition hover:bg-red-500/20"
       >
-        🗑 Remove
+         🗑
       </button>
     </div>
   );
@@ -1160,6 +1120,20 @@ const Library = () => {
     );
     return [...ordered, ...remaining];
   }, [allShows, activeTab, tabOrders]);
+
+  const sensors = useSensors(
+  useSensor(PointerSensor, {
+    activationConstraint: {
+      distance: 8, // Jab tak mouse 8px move nahi hota, drag start nahi hoga
+    },
+  }),
+  useSensor(TouchSensor, {
+    activationConstraint: {
+      delay: 250, // Mobile par item par 250ms tak ungli hold karni padegi tab drag shuru hoga (taki scroll kharab na ho)
+      tolerance: 5, // 5px tak hilne par bhi cancel nahi hoga
+    },
+  })
+);
 
   useEffect(() => {
     const filtered = filterShows(allShows, activeTab);
@@ -1361,231 +1335,81 @@ const Library = () => {
     }));
   };
 
-//   const updateEpisodeProgress = (showId, action) => {
-//     setAllShows((prev) => {
-//       const updated = prev.map((show) => {
-//         if (show.id !== showId) return show;
-
-//         let season = show.currentSeason || 1;
-//         let episode = show.currentEpisode || 1;
-
-//         const seasonHistory = {
-//           ...(show.seasonHistory || {}),
-//         };
-
-//         const currentSeasonData = show.seasons?.find(
-//           (s) => s.seasonNumber === season,
-//         );
-
-//         const episodesPerSeason = currentSeasonData?.episodeCount || 1;
-
-//         if (action === "start") {
-//   // Ensure seasonHistory object exists
-//   const now = new Date().toISOString();
-
-//   // If there's no entry for this season, create one.
-//   if (!seasonHistory[season]) {
-//     seasonHistory[season] = {
-//       startedAt: now,
-//       completedAt: null,
-//     };
-//   } else {
-//     // If entry exists but startedAt is null, set it now.
-//     seasonHistory[season] = {
-//       ...seasonHistory[season],
-//       startedAt: seasonHistory[season].startedAt || now,
-//       // keep completedAt if already set (shouldn't be), otherwise null
-//       completedAt: seasonHistory[season].completedAt || null,
-//     };
-//   }
-
-//   const exists = (show.watchHistory || []).find(
-//     (ep) => ep.season === season && ep.episode === episode,
-//   );
-
-//   return {
-//     ...show,
-//     startedAt: show.startedAt || new Date().toISOString(),
-//     currentTime: exists?.watchTime || 0,
-//     lastWatchedAt: new Date().toISOString(),
-//     waitingForSeasonStart: false,
-//     seasonHistory,
-//     watchHistory: exists
-//       ? show.watchHistory
-//       : [
-//           ...(show.watchHistory || []),
-//           {
-//             season,
-//             episode,
-//             startedAt: new Date().toISOString(),
-//             watchedAt: new Date().toISOString(),
-//             watchTime: 0,
-//             rating: null,
-//             review: "",
-//           },
-//         ],
-//   };
-// }
-
-//         if (action === "decrease") {
-//           if (episode > 1) {
-//             episode--;
-//           } else if (season > 1) {
-//             season--;
-//             episode =
-//               show.seasons?.find((s) => s.seasonNumber === season)
-//                 ?.episodeCount || 1;
-//           }
-
-//           const previousData = (show.watchHistory || []).find(
-//             (ep) => ep.season === season && ep.episode === episode,
-//           );
-
-//           return {
-//             ...show,
-//             currentSeason: season,
-//             currentEpisode: episode,
-//             currentTime: previousData?.watchTime || 0,
-//             lastWatchedAt: new Date().toISOString(),
-//             seasonHistory,
-//             watchHistory: show.watchHistory || [],
-//           };
-//         }
-
-//         if (action === "increase") {
-//           const exists = (show.watchHistory || []).find(
-//             (ep) => ep.season === season && ep.episode === episode,
-//           );
-
-//           let watchHistory = exists
-//             ? [...(show.watchHistory || [])]
-//             : [
-//                 ...(show.watchHistory || []),
-//                 {
-//                   season,
-//                   episode,
-//                   startedAt: new Date().toISOString(),
-//                   watchedAt: new Date().toISOString(),
-//                   watchTime: 0,
-//                   rating: null,
-//                   review: "",
-//                 },
-//               ];
-
-//           if (episode === episodesPerSeason) {
-//             return {
-//               ...show,
-//               watchHistory,
-//               seasonHistory,
-//               waitingForSeasonStart: false,
-//               lastWatchedAt: new Date().toISOString(),
-//             };
-//           }
-
-//           const nextEpisode = episode + 1;
-
-//           const nextExists = watchHistory.find(
-//             (ep) => ep.season === season && ep.episode === nextEpisode,
-//           );
-
-//           if (!nextExists) {
-//             watchHistory.push({
-//               season,
-//               episode: nextEpisode,
-//               startedAt: new Date().toISOString(),
-//               watchedAt: new Date().toISOString(),
-//               watchTime: 0,
-//               rating: null,
-//               review: "",
-//             });
-//           }
-
-//           const nextEpisodeData = watchHistory.find(
-//             (ep) => ep.season === season && ep.episode === nextEpisode,
-//           );
-
-//           return {
-//             ...show,
-//             currentSeason: season,
-//             currentEpisode: nextEpisode,
-//             currentTime: nextEpisodeData?.watchTime || 0,
-//             watchHistory,
-//             seasonHistory,
-//             waitingForSeasonStart: false,
-//             lastWatchedAt: new Date().toISOString(),
-//           };
-//         }
-//         return show;
-//       });
-
-//       const changed = updated.find((x) => x.id === showId);
-
-//       if (changed) {
-//         addToLibrary(changed);
-//       }
-
-//       return updated;
-//     });
-//   };
-
-// replace your existing updateTime function with this
-const updateEpisodeProgress = async (showId, { season = null, episode = null, newTime = 0 } = {}) => {
+const updateEpisodeProgress = async (showId, actionOrParams = {}) => {
   setAllShows((prev) => {
     const updated = prev.map((s) => {
       if (s.id !== showId && s.tmdbId !== showId) return s;
       const show = { ...s };
-      const runtimeSeconds = normalizeRuntime(show); // import normalizeRuntime from stats or implement locally
-      const sec = Number(newTime || 0);
-
-      // clamp
-      show.currentTime = Math.max(0, Math.min(sec, runtimeSeconds || sec));
-
-      // ensure watchHistory exists
-      show.watchHistory = Array.isArray(show.watchHistory) ? [...show.watchHistory] : [];
-
-      const currentSeason = season ?? show.currentSeason ?? 1;
-      const currentEpisode = episode ?? show.currentEpisode ?? 1;
-
-      // find existing episode entry in watchHistory
-      const idx = show.watchHistory.findIndex((ep) => ep.season === currentSeason && ep.episode === currentEpisode);
-
+      const runtimeSeconds = normalizeRuntime(show);
       const nowIso = new Date().toISOString();
 
+      show.watchHistory = Array.isArray(show.watchHistory) ? [...show.watchHistory] : [];
+
+      let currentSeason = show.currentSeason || 1;
+      let currentEpisode = show.currentEpisode || 1;
+
+      // Handle string actions from the buttons ("increase", "decrease", "start")
+      if (typeof actionOrParams === "string") {
+        const currentSeasonData = show.seasons?.find((s) => s.seasonNumber === currentSeason);
+        const maxEpisodesInSeason = currentSeasonData?.episodeCount || 1;
+
+        if (actionOrParams === "increase") {
+          if (currentEpisode < maxEpisodesInSeason) {
+            currentEpisode += 1;
+          }
+        } else if (actionOrParams === "decrease") {
+          if (currentEpisode > 1) {
+            currentEpisode -= 1;
+          } else if (currentSeason > 1) {
+            currentSeason -= 1;
+            const prevSeasonData = show.seasons?.find((s) => s.seasonNumber === currentSeason);
+            currentEpisode = prevSeasonData?.episodeCount || 1;
+          }
+        }
+        
+        // Reset timing variables on episode change
+        show.currentTime = 0;
+        show.waitingForSeasonStart = false;
+      } else {
+        // Handle object params if called from ranges/inputs ({ season, episode, newTime })
+        const { season = null, episode = null, newTime = 0 } = actionOrParams;
+        currentSeason = season ?? currentSeason;
+        currentEpisode = episode ?? currentEpisode;
+        const sec = Number(newTime || 0);
+        show.currentTime = Math.max(0, Math.min(sec, runtimeSeconds || sec));
+      }
+
+      // Update structural values
+      show.currentSeason = currentSeason;
+      show.currentEpisode = currentEpisode;
+
+      // Sync watch history entry
+      const idx = show.watchHistory.findIndex((ep) => ep.season === currentSeason && ep.episode === currentEpisode);
+
       if (idx === -1) {
-        // add new entry
         show.watchHistory.push({
           season: currentSeason,
           episode: currentEpisode,
           startedAt: show.startedAt || nowIso,
-          watchedAt: sec > 0 ? nowIso : null,
-          watchTime: show.currentTime || sec,
+          watchedAt: nowIso,
+          watchTime: show.currentTime,
           rating: null,
           review: "",
         });
       } else {
-        // update existing
         const entry = { ...show.watchHistory[idx] };
-        entry.watchTime = show.currentTime;
         if (show.currentTime > 0) entry.watchedAt = nowIso;
         show.watchHistory[idx] = entry;
       }
 
-      // update lastWatchedAt if time > 0
-      if (show.currentTime > 0) {
+      if (show.currentTime > 0 || typeof actionOrParams === "string") {
         show.lastWatchedAt = nowIso;
-      }
-
-      // For movies: if currentTime >= duration mark completed
-      if (show.type === "movie" && runtimeSeconds > 0 && show.currentTime >= runtimeSeconds) {
-        show.completedAt = show.completedAt || nowIso;
-        show.status = "completed";
       }
 
       return show;
     });
 
-    // persist changed show(s) in background
-    // after state update we will call API for changed ones; but setAllShows must return new state
+    // Background persistence
     setTimeout(() => {
       updated.forEach(async (s) => {
         if (s.id === showId || s.tmdbId === showId) {
@@ -1790,42 +1614,58 @@ const updateEpisodeProgress = async (showId, { season = null, episode = null, ne
     }
 
     // Use the UI ordering (filteredShows + tabOrders) to find currentIndex
-    const oldFiltered = filteredShows;
-    const currentIndex = oldFiltered.findIndex(
-      (item) => item.id === showId
-    );
+    // In Library.jsx inside updateShowStatus function:
+// Replace the selection logic at the end of updateShowStatus with this:
 
-    // Build the new filtered list from updatedLibrary, respecting tabOrders
-    const showsAfter = filterShows(updatedLibrary, activeTab);
-    const savedOrder = tabOrders[activeTab];
-    let newFiltered;
-    if (savedOrder?.length) {
-      const ordered = [];
-      savedOrder.forEach((id) => {
-        const found = showsAfter.find((s) => s.id === id);
-        if (found) ordered.push(found);
-      });
-      const remaining = showsAfter.filter((s) => !savedOrder.includes(s.id));
-      newFiltered = [...ordered, ...remaining];
-    } else {
-      newFiltered = showsAfter;
-    }
+const oldFiltered = filteredShows;
+const currentIndex = oldFiltered.findIndex((item) => item.id === showId);
 
-    let nextSelected = null;
+// Fresh filtered list nikalo
+const showsAfter = filterShows(updatedLibrary, activeTab);
+const savedOrder = tabOrders[activeTab];
+let newFiltered;
+if (savedOrder?.length) {
+  const ordered = [];
+  savedOrder.forEach((id) => {
+    const found = showsAfter.find((s) => s.id === id);
+    if (found) ordered.push(found);
+  });
+  const remaining = showsAfter.filter((s) => !savedOrder.includes(s.id));
+  newFiltered = [...ordered, ...remaining];
+} else {
+  newFiltered = showsAfter;
+}
 
+let nextSelected = null;
+
+if (newFiltered.length > 0) {
+  // Agar hum regular tabs (watching, dropped) mein hain aur show wahan se hutt chuka hai
+  if (!newFiltered.some(s => s.id === showId)) {
     if (newFiltered[currentIndex]) {
       nextSelected = newFiltered[currentIndex];
+    } else {
+      nextSelected = newFiltered[newFiltered.length - 1];
     }
-
-    if (!nextSelected && currentIndex > 0) {
+  } else {
+    // Agar show abhi bhi usi tab mein maujood hai (Jaise Favorites tab), toh usse agla wala select karo
+    if (newFiltered[currentIndex + 1]) {
+      nextSelected = newFiltered[currentIndex + 1];
+    } else if (newFiltered[currentIndex - 1]) {
       nextSelected = newFiltered[currentIndex - 1];
-    }
-
-    if (!nextSelected && newFiltered.length > 0) {
+    } else {
       nextSelected = newFiltered[0];
     }
+  }
+}
 
-    setSelectedShowId(nextSelected?.id ?? null);
+const nextId = nextSelected?.id ?? null;
+setSelectedShowId(nextId);
+
+if (nextId) {
+  navigate(`/library?tab=${activeTab}&show=${nextId}`, { replace: true });
+} else {
+  navigate(`/library?tab=${activeTab}`, { replace: true });
+}
   };
 
   const updateEpisodeRating = (showId, season, episode, rating) => {
@@ -1976,6 +1816,9 @@ const updateEpisodeProgress = async (showId, { season = null, episode = null, ne
     });
   };
 
+  
+
+
   if (authLoading) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
@@ -1997,7 +1840,7 @@ const updateEpisodeProgress = async (showId, { season = null, episode = null, ne
       </div>
     );
   }
-
+  
   return (
     <MainLayout>
       <div className="space-y-8">
@@ -2216,6 +2059,7 @@ const updateEpisodeProgress = async (showId, { season = null, episode = null, ne
             </div>
 
             <DndContext
+              sensors={sensors} // <- Yeh sensors prop pass karna zaroori hai boss
               collisionDetection={closestCenter}
               onDragEnd={handleDragEnd}
             >

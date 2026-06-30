@@ -19,7 +19,15 @@ console.log(
 );
 
 connectDB();
-app.use(cors());
+app.use(
+  cors({
+    origin: [
+      "https://watchverse-three.vercel.app",
+      "https://watchverse-2znyuc9yo-muqsit9.vercel.app",
+    ],
+    credentials: true,
+  })
+);
 
 app.use(express.json());
 

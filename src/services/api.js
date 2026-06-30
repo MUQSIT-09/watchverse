@@ -1,5 +1,7 @@
 // src/services/api.js
-const rawBase = import.meta.env.VITE_API_BASE || "https://watchverse-twq7.onrender.com";
+const rawBase =
+  import.meta.env.VITE_API_BASE ||
+  "https://watchverse-twq7.onrender.com/api";
 const API_BASE = rawBase.replace(/\/$/, "");
 
 // ... rest of file unchanged
@@ -43,8 +45,8 @@ async function safeFetch(path, opts = {}) {
   }
 }
 
-export const saveLibraryItem = async (item) => safeFetch("/api/library/save", { method: "POST", body: item });
-export const getUserLibrary = async (uid) => safeFetch(`/api/library/${uid}`);
-export const syncUser = async (user) => safeFetch("/api/users/sync", { method: "POST", body: {
+export const saveLibraryItem = async (item) => safeFetch("/library/save", { method: "POST", body: item });
+export const getUserLibrary = async (uid) => safeFetch(`/library/${uid}`);
+export const syncUser = async (user) => safeFetch("/users/sync", { method: "POST", body: {
   firebaseUid: user.uid, name: user.displayName||"", email: user.email||"", photoURL: user.photoURL||""
 }});

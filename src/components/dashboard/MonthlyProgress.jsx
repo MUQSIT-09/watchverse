@@ -15,7 +15,7 @@ const MonthlyProgress = () => {
   const isLoggedIn = !!user;
   const [library, setLibrary] = useState([]);
 
-  useEffect(() => {
+useEffect(() => {
   const load = async () => {
     if (!user) {
       setLibrary([]);
@@ -23,13 +23,8 @@ const MonthlyProgress = () => {
     }
 
     try {
-      const res = await getUserLibrary(user.uid);
-      const safeData =
-        Array.isArray(res) ? res :
-        Array.isArray(res?.library) ? res.library :
-        Array.isArray(res?.data) ? res.data :
-        [];
-      setLibrary(safeData);
+      const data = await getLibrary(user.uid);
+      setLibrary(data);
     } catch (err) {
       console.log("MonthlyProgress getLibrary error:", err);
       setLibrary([]);

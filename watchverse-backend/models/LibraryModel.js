@@ -2,8 +2,16 @@ const mongoose = require("mongoose");
 
 const librarySchema = new mongoose.Schema(
 {
-    firebaseUid: String,
-    tmdbId: Number,
+    firebaseUid: {
+        type: String,
+        required: true,
+        index: true,
+    },
+
+    tmdbId: {
+        type: Number,
+        required: true,
+    },
 
     title: String,
     poster: String,
@@ -38,12 +46,25 @@ const librarySchema = new mongoose.Schema(
 
     seasons: Array,
 
-    seasonHistory: Object,
+    seasonHistory: {
+        type: Object,
+        default: {},
+    },
 
-    watchHistory: Array,
+    watchHistory: {
+        type: Array,
+        default: [],
+    },
 
-    episodeRatings: Object,
-    episodeReviews: Object,
+    episodeRatings: {
+        type: Object,
+        default: {},
+    },
+
+    episodeReviews: {
+        type: Object,
+        default: {},
+    },
 
     userRating: Number,
     userReview: String,
@@ -52,11 +73,27 @@ const librarySchema = new mongoose.Schema(
 
     startedAt: Date,
     completedAt: Date,
-    rewatchCount: Number,
+    lastWatchedAt: Date,
+
+    rewatchCount: {
+        type: Number,
+        default: 0,
+    },
 },
 {
     timestamps: true,
 }
+);
+
+// Prevent duplicate entries for same user + show
+librarySchema.index(
+    {
+        firebaseUid: 1,
+        tmdbId: 1,
+    },
+    {
+        unique: true,
+    }
 );
 
 module.exports = mongoose.model("Library", librarySchema);

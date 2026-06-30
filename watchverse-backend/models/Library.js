@@ -1,82 +1,68 @@
-const mongoose =
-require("mongoose");
+const mongoose = require("mongoose");
 
-// models/Library.js (example)
-const mongoose = require('mongoose');
+const librarySchema = new mongoose.Schema(
+{
+    firebaseUid: String,
+    tmdbId: Number,
 
-const librarySchema = new mongoose.Schema({
-  firebaseUid: { type: String, required: true, index: true },
+    title: String,
+    poster: String,
+    type: String,
 
-  tmdbId: { type: Number, required: true, index: true },
+    tmdbRating: Number,
+    imdbRating: Number,
+    imdbId: String,
 
-  title: { type: String, default: "" },
+    overview: String,
+    genres: [String],
+    year: String,
+    cast: Array,
 
-  poster: { type: String, default: "" },
+    duration: Number,
+    runtime: Number,
 
-  type: { type: String, enum: ['tv','movie'], default: 'tv' },
+    status: String,
+    isFavorite: Boolean,
 
-  status: { type: String, default: "plan" },
+    queuePosition: Number,
 
-  isFavorite: { type: Boolean, default: false },
+    watchedEpisodes: Number,
+    totalEpisodes: Number,
 
-  userReview: { type: String, default: "" },
+    currentSeason: Number,
+    currentEpisode: Number,
+    totalSeasons: Number,
 
-  rating: { type: Number, default: null },
+    currentMinute: Number,
+    currentTime: Number,
 
-  runtime: { type: Number, default: 0 },       // seconds (or keep minutes if you prefer)
-  duration: { type: Number, default: 0 },      // minutes
+    seasons: Array,
 
-  currentTime: { type: Number, default: 0 },
-  currentMinute: { type: Number, default: 0 },
+    seasonHistory: Object,
 
-  watchedEpisodes: { type: Number, default: 0 },
+    watchHistory: Array,
 
-  totalEpisodes: { type: Number, default: 1 },
+    episodeRatings: Object,
+    episodeReviews: Object,
 
-  currentSeason: { type: Number, default: 1 },
+    userRating: Number,
+    userReview: String,
 
-  currentEpisode: { type: Number, default: 1 },
+    sentiment: String,
 
-  totalSeasons: { type: Number, default: 1 },
+    startedAt: Date,
+    completedAt: Date,
+    lastWatchedAt: Date,
 
-  queuePosition: { type: Number, default: 1 },
+    rewatchCount: {
+        type: Number,
+        default: 0,
+    },
 
-  tmdbRating: { type: Number, default: null },
-
-  imdbId: { type: String, default: null },
-
-  imdbRating: { type: Number, default: null },
-
-  overview: { type: String, default: "" },
-
-  genres: { type: [String], default: [] },
-
-  year: { type: String, default: "" },
-
-  cast: { type: [String], default: [] },
-
-  seasons: { type: Array, default: [] },
-
-  episodeRatings: { type: Object, default: {} },
-
-  episodeReviews: { type: Object, default: {} },
-
-  seasonHistory: { type: Object, default: {} },
-
-  watchHistory: { type: Array, default: [] },
-
-  lastWatchedAt: { type: Date, default: null },
-}, {
-  timestamps: true
+    rating: Number
+},
+{
+    timestamps: true,
 });
 
-// Compound index for faster lookups per user+tmdb
-librarySchema.index({ firebaseUid: 1, tmdbId: 1 }, { unique: false });
-
-module.exports = mongoose.model('Library', librarySchema);
-
-module.exports =
-mongoose.model(
-  "Library",
-  librarySchema
-);
+module.exports = mongoose.model("Library", librarySchema);

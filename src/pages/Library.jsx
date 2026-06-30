@@ -15,7 +15,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { DndContext, closestCenter } from "@dnd-kit/core";
-import { normalizeRuntime } from "../../utils/stats";
+import { normalizeRuntime } from "../utils/stats";
 import {
   SortableContext,
   verticalListSortingStrategy,

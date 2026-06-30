@@ -1415,6 +1415,18 @@ const updateEpisodeProgress = async (showId, actionOrParams = {}) => {
         show.lastWatchedAt = nowIso;
       }
 
+      // For movies: if currentTime >= duration mark completed
+      if (show.type === "movie" && runtimeSeconds > 0 && show.currentTime >= runtimeSeconds) {
+        show.completedAt = show.completedAt || nowIso;
+        show.status = "completed";
+      }
+
+      // 👉 FIX: TV Shows auto-complete logic check to prevent active context corruption on last episode click
+      if (show.type === "tv" && show.totalEpisodes > 0 && show.watchHistory?.length >= show.totalEpisodes) {
+        show.completedAt = show.completedAt || nowIso;
+        show.status = "completed";
+      }
+
       return show;
     });
 

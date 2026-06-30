@@ -1,5 +1,4 @@
-const API_URL =
-"https://watchverse-twq7.onrender.com";
+const API_URL = "https://watchverse-twq7.onrender.com/api";
 
 export const syncUser =
 async (user) => {

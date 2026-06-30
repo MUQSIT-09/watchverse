@@ -1,25 +1,20 @@
+// config/db.js
 const mongoose = require("mongoose");
 
 const connectDB = async () => {
   try {
-    console.log("Trying MongoDB...");
-
-    await mongoose.connect(
-      process.env.MONGO_URI
-    );
-
-    console.log(
-      "MongoDB Connected"
-    );
-
-  } catch (error) {
-
-    console.error(
-      "Mongo Error:",
-      error.message
-    );
-
-    process.exit(1);
+    const uri = process.env.MONGO_URI;
+    if (!uri) {
+      console.error("MONGO_URI not set in env");
+      return;
+    }
+    const conn = await mongoose.connect(uri, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    console.log(`MongoDB connected: ${conn.connection.host}`);
+  } catch (err) {
+    console.error("MongoDB connection error:", err.message);
   }
 };
 

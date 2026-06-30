@@ -1,84 +1,50 @@
-const API_URL = "https://watchverse-twq7.onrender.com/api";
+// src/services/api.js
+const rawBase = import.meta.env.VITE_API_BASE || "https://watchverse-twq7.onrender.com";
+const API_BASE = rawBase.replace(/\/$/, "");
 
-export const syncUser =
-async (user) => {
+// ... rest of file unchanged
+async function safeFetch(path, opts = {}) {
+  const url = `${API_BASE}${path}`;
+  const controller = new AbortController();
+  const timeout = opts.timeout || 10000;
+  const id = setTimeout(() => controller.abort(), timeout);
 
-  const response =
-  await fetch(
-    `${API_URL}/users/sync`,
-    {
-      method: "POST",
+  try {
+    const res = await fetch(url, {
+      method: opts.method || "GET",
+      headers: { "Content-Type": "application/json", ...(opts.headers || {}) },
+      body: opts.body ? JSON.stringify(opts.body) : undefined,
+      credentials: opts.credentials || "include",
+      signal: controller.signal,
+    });
+    clearTimeout(id);
 
-      headers: {
-        "Content-Type":
-        "application/json",
-      },
+    const text = await res.text();
+    const contentType = res.headers.get("content-type") || "";
 
-      body: JSON.stringify({
-        firebaseUid: user.uid,
-        name:
-          user.displayName || "",
-        email:
-          user.email || "",
-        photoURL:
-          user.photoURL || "",
-      }),
+    if (!res.ok) {
+      const err = new Error(`API ${res.status} ${res.statusText}`);
+      err.status = res.status;
+      err.body = text;
+      throw err;
     }
-  );
 
-  return response.json();
-};
-
-export const saveLibraryItem =
-async (item) => {
-
-const response =
-await fetch(
-`${API_URL}/library/save`,
-{
-method: "POST",
-
-headers: {
-"Content-Type":
-"application/json",
-},
-
-body: JSON.stringify(item),
+    if (contentType.includes("application/json")) {
+      try {
+        return JSON.parse(text);
+      } catch {
+        return { raw: text };
+      }
+    }
+    return { raw: text };
+  } catch (err) {
+    clearTimeout(id);
+    throw err;
+  }
 }
-);
 
-return response.json();
-
-};
-
-
-// export const getUserLibrary = async (uid) => {
-//   try {
-//     const res = await fetch(`${API_URL}/library/${uid}`);
-//     const data = await res.json();
-
-//     if (Array.isArray(data)) return data;
-//     if (Array.isArray(data?.library)) return data.library;
-//     if (Array.isArray(data?.data)) return data.data;
-
-//     return [];
-//   } catch (err) {
-//     console.log("getUserLibrary error:", err);
-//     return [];
-//   }
-// };
-
-export const getUserLibrary = async (uid) => {
-  const res = await fetch(`${API_URL}/library/${uid}`);
-  const data = await res.json();
-
-  return (
-    Array.isArray(data)
-      ? data
-      : Array.isArray(data?.library)
-      ? data.library
-      : Array.isArray(data?.data)
-      ? data.data
-      : []
-  );
-};
+export const saveLibraryItem = async (item) => safeFetch("/api/library/save", { method: "POST", body: item });
+export const getUserLibrary = async (uid) => safeFetch(`/api/library/${uid}`);
+export const syncUser = async (user) => safeFetch("/api/users/sync", { method: "POST", body: {
+  firebaseUid: user.uid, name: user.displayName||"", email: user.email||"", photoURL: user.photoURL||""
+}});

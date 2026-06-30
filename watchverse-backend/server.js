@@ -46,6 +46,10 @@ app.listen(PORT, () => {
   );
 });
 
+app.get("/api/health", (req, res) => {
+  res.json({ ok: true, time: new Date().toISOString() });
+});
+
 // Is line ko dhyan se check karo aur update karo
 // app.use(cors({
 //   origin: "http://localhost:5173", // Aapka React frontend jahan chal raha hai (agar port alag hai, jaise 3000, toh 3000 likhna)

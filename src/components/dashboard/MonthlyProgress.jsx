@@ -15,7 +15,7 @@ const MonthlyProgress = () => {
   const isLoggedIn = !!user;
   const [library, setLibrary] = useState([]);
 
-useEffect(() => {
+  useEffect(() => {
   const load = async () => {
     if (!user) {
       setLibrary([]);
@@ -23,27 +23,22 @@ useEffect(() => {
     }
 
     try {
-      const res = await fetch(
-        `http://localhost:5000/api/library/${user.uid}`
-      );
-
-      const data = await res.json();
-
+      const res = await getUserLibrary(user.uid);
       const safeData =
-        Array.isArray(data) ? data :
-        Array.isArray(data?.library) ? data.library :
-        Array.isArray(data?.data) ? data.data :
+        Array.isArray(res) ? res :
+        Array.isArray(res?.library) ? res.library :
+        Array.isArray(res?.data) ? res.data :
         [];
-
       setLibrary(safeData);
     } catch (err) {
-      console.log(err);
+      console.log("MonthlyProgress getLibrary error:", err);
       setLibrary([]);
     }
   };
 
   load();
 }, [user]);
+
   const currentStreak = getCurrentMonthStreak(Array.isArray(library) ? library : []);
   const highestStreak = getHighestMonthStreak(Array.isArray(library) ? library : []);
   const moviesCompleted = getMoviesCompletedThisMonth(Array.isArray(library) ? library : []);

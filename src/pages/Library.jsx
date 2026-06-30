@@ -1360,172 +1360,246 @@ const Library = () => {
     }));
   };
 
-  const updateEpisodeProgress = (showId, action) => {
-    setAllShows((prev) => {
-      const updated = prev.map((show) => {
-        if (show.id !== showId) return show;
+//   const updateEpisodeProgress = (showId, action) => {
+//     setAllShows((prev) => {
+//       const updated = prev.map((show) => {
+//         if (show.id !== showId) return show;
 
-        let season = show.currentSeason || 1;
-        let episode = show.currentEpisode || 1;
+//         let season = show.currentSeason || 1;
+//         let episode = show.currentEpisode || 1;
 
-        const seasonHistory = {
-          ...(show.seasonHistory || {}),
-        };
+//         const seasonHistory = {
+//           ...(show.seasonHistory || {}),
+//         };
 
-        const currentSeasonData = show.seasons?.find(
-          (s) => s.seasonNumber === season,
-        );
+//         const currentSeasonData = show.seasons?.find(
+//           (s) => s.seasonNumber === season,
+//         );
 
-        const episodesPerSeason = currentSeasonData?.episodeCount || 1;
+//         const episodesPerSeason = currentSeasonData?.episodeCount || 1;
 
-        if (action === "start") {
-  // Ensure seasonHistory object exists
-  const now = new Date().toISOString();
+//         if (action === "start") {
+//   // Ensure seasonHistory object exists
+//   const now = new Date().toISOString();
 
-  // If there's no entry for this season, create one.
-  if (!seasonHistory[season]) {
-    seasonHistory[season] = {
-      startedAt: now,
-      completedAt: null,
-    };
-  } else {
-    // If entry exists but startedAt is null, set it now.
-    seasonHistory[season] = {
-      ...seasonHistory[season],
-      startedAt: seasonHistory[season].startedAt || now,
-      // keep completedAt if already set (shouldn't be), otherwise null
-      completedAt: seasonHistory[season].completedAt || null,
-    };
-  }
+//   // If there's no entry for this season, create one.
+//   if (!seasonHistory[season]) {
+//     seasonHistory[season] = {
+//       startedAt: now,
+//       completedAt: null,
+//     };
+//   } else {
+//     // If entry exists but startedAt is null, set it now.
+//     seasonHistory[season] = {
+//       ...seasonHistory[season],
+//       startedAt: seasonHistory[season].startedAt || now,
+//       // keep completedAt if already set (shouldn't be), otherwise null
+//       completedAt: seasonHistory[season].completedAt || null,
+//     };
+//   }
 
-  const exists = (show.watchHistory || []).find(
-    (ep) => ep.season === season && ep.episode === episode,
-  );
+//   const exists = (show.watchHistory || []).find(
+//     (ep) => ep.season === season && ep.episode === episode,
+//   );
 
-  return {
-    ...show,
-    startedAt: show.startedAt || new Date().toISOString(),
-    currentTime: exists?.watchTime || 0,
-    lastWatchedAt: new Date().toISOString(),
-    waitingForSeasonStart: false,
-    seasonHistory,
-    watchHistory: exists
-      ? show.watchHistory
-      : [
-          ...(show.watchHistory || []),
-          {
-            season,
-            episode,
-            startedAt: new Date().toISOString(),
-            watchedAt: new Date().toISOString(),
-            watchTime: 0,
-            rating: null,
-            review: "",
-          },
-        ],
-  };
-}
+//   return {
+//     ...show,
+//     startedAt: show.startedAt || new Date().toISOString(),
+//     currentTime: exists?.watchTime || 0,
+//     lastWatchedAt: new Date().toISOString(),
+//     waitingForSeasonStart: false,
+//     seasonHistory,
+//     watchHistory: exists
+//       ? show.watchHistory
+//       : [
+//           ...(show.watchHistory || []),
+//           {
+//             season,
+//             episode,
+//             startedAt: new Date().toISOString(),
+//             watchedAt: new Date().toISOString(),
+//             watchTime: 0,
+//             rating: null,
+//             review: "",
+//           },
+//         ],
+//   };
+// }
 
-        if (action === "decrease") {
-          if (episode > 1) {
-            episode--;
-          } else if (season > 1) {
-            season--;
-            episode =
-              show.seasons?.find((s) => s.seasonNumber === season)
-                ?.episodeCount || 1;
-          }
+//         if (action === "decrease") {
+//           if (episode > 1) {
+//             episode--;
+//           } else if (season > 1) {
+//             season--;
+//             episode =
+//               show.seasons?.find((s) => s.seasonNumber === season)
+//                 ?.episodeCount || 1;
+//           }
 
-          const previousData = (show.watchHistory || []).find(
-            (ep) => ep.season === season && ep.episode === episode,
-          );
+//           const previousData = (show.watchHistory || []).find(
+//             (ep) => ep.season === season && ep.episode === episode,
+//           );
 
-          return {
-            ...show,
-            currentSeason: season,
-            currentEpisode: episode,
-            currentTime: previousData?.watchTime || 0,
-            lastWatchedAt: new Date().toISOString(),
-            seasonHistory,
-            watchHistory: show.watchHistory || [],
-          };
-        }
+//           return {
+//             ...show,
+//             currentSeason: season,
+//             currentEpisode: episode,
+//             currentTime: previousData?.watchTime || 0,
+//             lastWatchedAt: new Date().toISOString(),
+//             seasonHistory,
+//             watchHistory: show.watchHistory || [],
+//           };
+//         }
 
-        if (action === "increase") {
-          const exists = (show.watchHistory || []).find(
-            (ep) => ep.season === season && ep.episode === episode,
-          );
+//         if (action === "increase") {
+//           const exists = (show.watchHistory || []).find(
+//             (ep) => ep.season === season && ep.episode === episode,
+//           );
 
-          let watchHistory = exists
-            ? [...(show.watchHistory || [])]
-            : [
-                ...(show.watchHistory || []),
-                {
-                  season,
-                  episode,
-                  startedAt: new Date().toISOString(),
-                  watchedAt: new Date().toISOString(),
-                  watchTime: 0,
-                  rating: null,
-                  review: "",
-                },
-              ];
+//           let watchHistory = exists
+//             ? [...(show.watchHistory || [])]
+//             : [
+//                 ...(show.watchHistory || []),
+//                 {
+//                   season,
+//                   episode,
+//                   startedAt: new Date().toISOString(),
+//                   watchedAt: new Date().toISOString(),
+//                   watchTime: 0,
+//                   rating: null,
+//                   review: "",
+//                 },
+//               ];
 
-          if (episode === episodesPerSeason) {
-            return {
-              ...show,
-              watchHistory,
-              seasonHistory,
-              waitingForSeasonStart: false,
-              lastWatchedAt: new Date().toISOString(),
-            };
-          }
+//           if (episode === episodesPerSeason) {
+//             return {
+//               ...show,
+//               watchHistory,
+//               seasonHistory,
+//               waitingForSeasonStart: false,
+//               lastWatchedAt: new Date().toISOString(),
+//             };
+//           }
 
-          const nextEpisode = episode + 1;
+//           const nextEpisode = episode + 1;
 
-          const nextExists = watchHistory.find(
-            (ep) => ep.season === season && ep.episode === nextEpisode,
-          );
+//           const nextExists = watchHistory.find(
+//             (ep) => ep.season === season && ep.episode === nextEpisode,
+//           );
 
-          if (!nextExists) {
-            watchHistory.push({
-              season,
-              episode: nextEpisode,
-              startedAt: new Date().toISOString(),
-              watchedAt: new Date().toISOString(),
-              watchTime: 0,
-              rating: null,
-              review: "",
-            });
-          }
+//           if (!nextExists) {
+//             watchHistory.push({
+//               season,
+//               episode: nextEpisode,
+//               startedAt: new Date().toISOString(),
+//               watchedAt: new Date().toISOString(),
+//               watchTime: 0,
+//               rating: null,
+//               review: "",
+//             });
+//           }
 
-          const nextEpisodeData = watchHistory.find(
-            (ep) => ep.season === season && ep.episode === nextEpisode,
-          );
+//           const nextEpisodeData = watchHistory.find(
+//             (ep) => ep.season === season && ep.episode === nextEpisode,
+//           );
 
-          return {
-            ...show,
-            currentSeason: season,
-            currentEpisode: nextEpisode,
-            currentTime: nextEpisodeData?.watchTime || 0,
-            watchHistory,
-            seasonHistory,
-            waitingForSeasonStart: false,
-            lastWatchedAt: new Date().toISOString(),
-          };
-        }
-        return show;
-      });
+//           return {
+//             ...show,
+//             currentSeason: season,
+//             currentEpisode: nextEpisode,
+//             currentTime: nextEpisodeData?.watchTime || 0,
+//             watchHistory,
+//             seasonHistory,
+//             waitingForSeasonStart: false,
+//             lastWatchedAt: new Date().toISOString(),
+//           };
+//         }
+//         return show;
+//       });
 
-      const changed = updated.find((x) => x.id === showId);
+//       const changed = updated.find((x) => x.id === showId);
 
-      if (changed) {
-        addToLibrary(changed);
+//       if (changed) {
+//         addToLibrary(changed);
+//       }
+
+//       return updated;
+//     });
+//   };
+
+// replace your existing updateTime function with this
+const updateEpisodeProgress = async (showId, { season = null, episode = null, newTime = 0 } = {}) => {
+  setAllShows((prev) => {
+    const updated = prev.map((s) => {
+      if (s.id !== showId && s.tmdbId !== showId) return s;
+      const show = { ...s };
+      const runtimeSeconds = normalizeRuntime(show); // import normalizeRuntime from stats or implement locally
+      const sec = Number(newTime || 0);
+
+      // clamp
+      show.currentTime = Math.max(0, Math.min(sec, runtimeSeconds || sec));
+
+      // ensure watchHistory exists
+      show.watchHistory = Array.isArray(show.watchHistory) ? [...show.watchHistory] : [];
+
+      const currentSeason = season ?? show.currentSeason ?? 1;
+      const currentEpisode = episode ?? show.currentEpisode ?? 1;
+
+      // find existing episode entry in watchHistory
+      const idx = show.watchHistory.findIndex((ep) => ep.season === currentSeason && ep.episode === currentEpisode);
+
+      const nowIso = new Date().toISOString();
+
+      if (idx === -1) {
+        // add new entry
+        show.watchHistory.push({
+          season: currentSeason,
+          episode: currentEpisode,
+          startedAt: show.startedAt || nowIso,
+          watchedAt: sec > 0 ? nowIso : null,
+          watchTime: show.currentTime || sec,
+          rating: null,
+          review: "",
+        });
+      } else {
+        // update existing
+        const entry = { ...show.watchHistory[idx] };
+        entry.watchTime = show.currentTime;
+        if (show.currentTime > 0) entry.watchedAt = nowIso;
+        show.watchHistory[idx] = entry;
       }
 
-      return updated;
+      // update lastWatchedAt if time > 0
+      if (show.currentTime > 0) {
+        show.lastWatchedAt = nowIso;
+      }
+
+      // For movies: if currentTime >= duration mark completed
+      if (show.type === "movie" && runtimeSeconds > 0 && show.currentTime >= runtimeSeconds) {
+        show.completedAt = show.completedAt || nowIso;
+        show.status = "completed";
+      }
+
+      return show;
     });
-  };
+
+    // persist changed show(s) in background
+    // after state update we will call API for changed ones; but setAllShows must return new state
+    setTimeout(() => {
+      updated.forEach(async (s) => {
+        if (s.id === showId || s.tmdbId === showId) {
+          try {
+            await addToLibrary(s);
+          } catch (e) {
+            console.warn("Failed to persist progress", e);
+          }
+        }
+      });
+    }, 0);
+
+    return updated;
+  });
+};
 
   const finishSeason = (showId) => {
   setAllShows((prev) => {

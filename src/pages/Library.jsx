@@ -1037,15 +1037,16 @@ function SortableShowItem({ show, index, deleteShowForever }) {
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center justify-between rounded-xl bg-slate-800 p-3"
+      className="flex items-center justify-between rounded-xl bg-slate-800 p-3 select-none touch-none" // 👈 Added select-none and touch-none to prevent ghost scrolls on mobile
     >
       <div className="flex items-center gap-3">
         <span className="w-3 text-sm text-slate-500">{index + 1}</span>
 
+        {/* Grab Handle button optimized with clean touch target pad sizing */}
         <div
           {...attributes}
           {...listeners}
-          className="cursor-grab text-slate-400"
+          className="cursor-grab text-slate-400 p-2 active:cursor-grabbing" 
         >
           ☰
         </div>
@@ -1053,7 +1054,7 @@ function SortableShowItem({ show, index, deleteShowForever }) {
         <img
           src={getPosterUrl(show.poster)}
           alt={show.title}
-          className="h-14 w-10 rounded-lg object-cover"
+          className="h-14 w-10 rounded-lg object-cover pointer-events-none" // 👈 pointer-events-none to avoid accidental image context triggers while dragging
           onError={(e) => {
             e.target.src =
               "https://placehold.co/80x120/0f172a/94a3b8?text=No+Image";
@@ -1068,9 +1069,9 @@ function SortableShowItem({ show, index, deleteShowForever }) {
 
       <button
         onClick={() => deleteShowForever(show.id)}
-        className="rounded-xl px-3 py-2 text-sm text-red-400 transition hover:bg-red-500/20"
+        className="rounded-xl px-3 py-2 text-sm text-red-400 transition hover:bg-red-500/20 relative z-10" // 👈 relative z-10 so click won't conflict with dnd sensor activation layer
       >
-         🗑
+        🗑
       </button>
     </div>
   );
@@ -1396,6 +1397,14 @@ const updateEpisodeProgress = async (showId, actionOrParams = {}) => {
           rating: null,
           review: "",
         });
+        
+        if (!show.seasonHistory) show.seasonHistory = {};
+        if (!show.seasonHistory[currentSeason]) {
+          show.seasonHistory[currentSeason] = { startedAt: null, completedAt: null };
+        }
+        if (!show.seasonHistory[currentSeason].startedAt) {
+          show.seasonHistory[currentSeason].startedAt = nowIso;
+        }
       } else {
         const entry = { ...show.watchHistory[idx] };
         if (show.currentTime > 0) entry.watchedAt = nowIso;
@@ -1637,35 +1646,40 @@ if (savedOrder?.length) {
 }
 
 let nextSelected = null;
-
-if (newFiltered.length > 0) {
-  // Agar hum regular tabs (watching, dropped) mein hain aur show wahan se hutt chuka hai
-  if (!newFiltered.some(s => s.id === showId)) {
-    if (newFiltered[currentIndex]) {
-      nextSelected = newFiltered[currentIndex];
-    } else {
-      nextSelected = newFiltered[newFiltered.length - 1];
+    if (newFiltered.length > 0) {
+      // Check karo ki update hone ke baad show isi tab mein bacha hai ya nahi (jaise Favorites)
+      const isStillInTab = newFiltered.some(s => s.id === showId);
+      
+      if (!isStillInTab) {
+        // Agar show dusre tab me chala gaya hai, toh usi tab ka agla ya pichla element select karo
+        if (newFiltered[currentIndex]) {
+          nextSelected = newFiltered[currentIndex];
+        } else if (newFiltered[currentIndex - 1]) {
+          nextSelected = newFiltered[currentIndex - 1];
+        } else {
+          nextSelected = newFiltered[newFiltered.length - 1];
+        }
+      } else {
+        // Agar show abhi bhi usi tab me hai (jaise Favorites tab me duration change kiya), toh selection wahi rakho ya logically shift karo
+        if (newFiltered[currentIndex]) {
+          nextSelected = newFiltered[currentIndex];
+        } else if (newFiltered[currentIndex + 1]) {
+          nextSelected = newFiltered[currentIndex + 1];
+        } else {
+          nextSelected = newFiltered[0];
+        }
+      }
     }
-  } else {
-    // Agar show abhi bhi usi tab mein maujood hai (Jaise Favorites tab), toh usse agla wala select karo
-    if (newFiltered[currentIndex + 1]) {
-      nextSelected = newFiltered[currentIndex + 1];
-    } else if (newFiltered[currentIndex - 1]) {
-      nextSelected = newFiltered[currentIndex - 1];
+
+    const nextId = nextSelected?.id ?? null;
+    setSelectedShowId(nextId);
+
+    // URL strict rakho activeTab par hi taaki cross-tab switching na ho automatically
+    if (nextId) {
+      navigate(`/library?tab=${activeTab}&show=${nextId}`, { replace: true });
     } else {
-      nextSelected = newFiltered[0];
+      navigate(`/library?tab=${activeTab}`, { replace: true });
     }
-  }
-}
-
-const nextId = nextSelected?.id ?? null;
-setSelectedShowId(nextId);
-
-if (nextId) {
-  navigate(`/library?tab=${activeTab}&show=${nextId}`, { replace: true });
-} else {
-  navigate(`/library?tab=${activeTab}`, { replace: true });
-}
   };
 
   const updateEpisodeRating = (showId, season, episode, rating) => {

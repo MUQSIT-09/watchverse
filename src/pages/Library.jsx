@@ -565,7 +565,9 @@ const ShowDetails = ({
                       <span className="text-slate-300">
                         {show.seasonHistory?.[selectedSeason]?.completedAt
                           ? formatDate(show.seasonHistory[selectedSeason].completedAt)
-                          : "Ongoing"}
+                          : show.seasonHistory?.[selectedSeason]?.startedAt
+                          ? "In Progress"
+                          : "Not Started"}
                       </span>
                     </div>
                   </div>
@@ -1464,7 +1466,7 @@ const updateEpisodeProgress = async (showId, actionOrParams = {}) => {
             startedAt:
               show.seasonHistory?.[finishedSeason]?.startedAt ||
               show.startedAt ||
-              null,
+              now,
             completedAt: now,
           },
         };
@@ -1473,10 +1475,9 @@ const updateEpisodeProgress = async (showId, actionOrParams = {}) => {
         const nextSeason = (show.currentSeason || 1) + 1;
         if (!seasonHistory[nextSeason]) {
           seasonHistory[nextSeason] = {
-            ...(seasonHistory[nextSeason] || {}),
-            startedAt: null,
+            startedAt: now,      // IMPORTANT FIX
             completedAt: null,
-          };
+        };
         }
 
               return {

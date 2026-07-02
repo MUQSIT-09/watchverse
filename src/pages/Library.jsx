@@ -1340,132 +1340,110 @@ const Library = () => {
     }));
   };
 
-const updateEpisodeProgress = async (showId, actionOrParams = {}) => {
-  setAllShows((prev) => {
-    const updated = prev.map((s) => {
-      if (s.id !== showId && s.tmdbId !== showId) return s;
-      const show = { ...s };
-      const runtimeSeconds = normalizeRuntime(show);
-      const nowIso = new Date().toISOString();
+  const updateEpisodeProgress = async (showId, actionOrParams = {}) => {
+    setAllShows((prev) => {
+      const updated = prev.map((s) => {
+        if (s.id !== showId && s.tmdbId !== showId) return s;
+        const show = { ...s };
+        const runtimeSeconds = normalizeRuntime(show);
+        const nowIso = new Date().toISOString();
 
-      show.watchHistory = Array.isArray(show.watchHistory) ? [...show.watchHistory] : [];
+        show.watchHistory = Array.isArray(show.watchHistory) ? [...show.watchHistory] : [];
 
-      let currentSeason = show.currentSeason || 1;
-      let currentEpisode = show.currentEpisode || 1;
+        let currentSeason = show.currentSeason || 1;
+        let currentEpisode = show.currentEpisode || 1;
 
-      // Handle string actions from the buttons ("increase", "decrease", "start")
-      if (typeof actionOrParams === "string") {
-        const currentSeasonData = show.seasons?.find((s) => s.seasonNumber === currentSeason);
-        const maxEpisodesInSeason = currentSeasonData?.episodeCount || 1;
+        // Handle string actions from the buttons ("increase", "decrease", "start")
+        if (typeof actionOrParams === "string") {
+          const currentSeasonData = show.seasons?.find((s) => s.seasonNumber === currentSeason);
+          const maxEpisodesInSeason = currentSeasonData?.episodeCount || 1;
 
-        if (actionOrParams === "increase") {
-          if (currentEpisode < maxEpisodesInSeason) {
-            currentEpisode += 1;
+          if (actionOrParams === "increase") {
+            if (currentEpisode < maxEpisodesInSeason) {
+              currentEpisode += 1;
+            }
+          } else if (actionOrParams === "decrease") {
+            if (currentEpisode > 1) {
+              currentEpisode -= 1;
+            } else if (currentSeason > 1) {
+              currentSeason -= 1;
+              const prevSeasonData = show.seasons?.find((s) => s.seasonNumber === currentSeason);
+              currentEpisode = prevSeasonData?.episodeCount || 1;
+            }
           }
-        } else if (actionOrParams === "decrease") {
-          if (currentEpisode > 1) {
-            currentEpisode -= 1;
-          } else if (currentSeason > 1) {
-            currentSeason -= 1;
-            const prevSeasonData = show.seasons?.find((s) => s.seasonNumber === currentSeason);
-            currentEpisode = prevSeasonData?.episodeCount || 1;
-          }
+          
+          // Reset timing variables on episode change
+          show.currentTime = 0;
+          show.waitingForSeasonStart = false;
+        } else {
+          // Handle object params if called from ranges/inputs ({ season, episode, newTime })
+          const { season = null, episode = null, newTime = 0 } = actionOrParams;
+          currentSeason = season ?? currentSeason;
+          currentEpisode = episode ?? currentEpisode;
+          const sec = Number(newTime || 0);
+          show.currentTime = Math.max(0, Math.min(sec, runtimeSeconds || sec));
         }
+
+        // Update structural values
+        show.currentSeason = currentSeason;
+        show.currentEpisode = currentEpisode;
+
+        // Sync watch history entry
+        const idx = show.watchHistory.findIndex((ep) => ep.season === currentSeason && ep.episode === currentEpisode);
+
+        if (idx === -1) {
+          show.watchHistory.push({
+            season: currentSeason,
+            episode: currentEpisode,
+            startedAt: show.startedAt || nowIso,
+            watchedAt: nowIso,
+            watchTime: show.currentTime,
+            rating: null,
+            review: "",
+          });
+          
+          if (!show.seasonHistory) show.seasonHistory = {};
+          if (!show.seasonHistory[currentSeason]) {
+            show.seasonHistory[currentSeason] = { startedAt: null, completedAt: null };
+          }
+          if (!show.seasonHistory[currentSeason].startedAt) {
+            show.seasonHistory[currentSeason].startedAt = nowIso;
+          }
+        } else {
+          const entry = { ...show.watchHistory[idx] };
+          if (show.currentTime > 0) entry.watchedAt = nowIso;
+          show.watchHistory[idx] = entry;
+        }
+
+        if (show.currentTime > 0 || typeof actionOrParams === "string") {
+          show.lastWatchedAt = nowIso;
+        }
+
+        // For movies: if currentTime >= duration mark completed
         
-        // Reset timing variables on episode change
-        show.currentTime = 0;
-        show.waitingForSeasonStart = false;
-      } else {
-        // Handle object params if called from ranges/inputs ({ season, episode, newTime })
-        const { season = null, episode = null, newTime = 0 } = actionOrParams;
-        currentSeason = season ?? currentSeason;
-        currentEpisode = episode ?? currentEpisode;
-        const sec = Number(newTime || 0);
-        show.currentTime = Math.max(0, Math.min(sec, runtimeSeconds || sec));
-      }
 
-      // Update structural values
-      show.currentSeason = currentSeason;
-      show.currentEpisode = currentEpisode;
+        // 👉 FIX: TV Shows auto-complete logic check to prevent active context corruption on last episode click
+      
 
-      // Sync watch history entry
-      const idx = show.watchHistory.findIndex((ep) => ep.season === currentSeason && ep.episode === currentEpisode);
-
-      if (idx === -1) {
-        show.watchHistory.push({
-          season: currentSeason,
-          episode: currentEpisode,
-          startedAt: show.startedAt || nowIso,
-          watchedAt: nowIso,
-          watchTime: show.currentTime,
-          rating: null,
-          review: "",
-        });
-        
-        if (!show.seasonHistory) show.seasonHistory = {};
-        if (!show.seasonHistory[currentSeason]) {
-          show.seasonHistory[currentSeason] = { startedAt: null, completedAt: null };
-        }
-        if (!show.seasonHistory[currentSeason].startedAt) {
-          show.seasonHistory[currentSeason].startedAt = nowIso;
-        }
-      } else {
-        const entry = { ...show.watchHistory[idx] };
-        if (show.currentTime > 0) entry.watchedAt = nowIso;
-        show.watchHistory[idx] = entry;
-      }
-
-      if (show.currentTime > 0 || typeof actionOrParams === "string") {
-        show.lastWatchedAt = nowIso;
-      }
-
-      // For movies: if currentTime >= duration mark completed
-      if (show.type === "tv" && show.totalEpisodes > 0) {
-  const uniqueEpisodesWatched = new Set(
-    show.watchHistory?.map((ep) => `${ep.season}-${ep.episode}`) || []
-  ).size;
-
-  const isFullyCompleted = uniqueEpisodesWatched >= show.totalEpisodes;
-
-  if (isFullyCompleted) {
-    show.completedAt = show.completedAt || nowIso;
-    show.status = "completed";
-  }
-}
-
-      // 👉 FIX: TV Shows auto-complete logic check to prevent active context corruption on last episode click
-      if (show.type === "tv") {
-  const total = show.totalEpisodes || 0;
-
-  const uniqueEpisodes = new Set(
-    show.watchHistory.map((e) => `${e.season}-${e.episode}`)
-  ).size;
-
-  if (total > 0 && uniqueEpisodes >= total) {
-    show.completedAt = show.completedAt || nowIso;
-    show.status = "completed";
-  }
-}
-
-      return show;
-    });
-
-    // Background persistence
-    setTimeout(() => {
-      updated.forEach(async (s) => {
-        if (s.id === showId || s.tmdbId === showId) {
-          try {
-            await addToLibrary(s);
-          } catch (e) {
-            console.warn("Failed to persist progress", e);
-          }
-        }
+        return show;
       });
-    }, 0);
 
-    return updated;
-  });
-};
+      // Background persistence
+      setTimeout(() => {
+        updated.forEach(async (s) => {
+          if (s.id === showId || s.tmdbId === showId) {
+            try {
+              await addToLibrary(s);
+            } catch (e) {
+              console.warn("Failed to persist progress", e);
+            }
+          }
+        });
+      }, 0);
+
+      return updated;
+    });
+  };
 
     const finishSeason = (showId) => {
     setAllShows((prev) => {
@@ -1497,17 +1475,33 @@ const updateEpisodeProgress = async (showId, actionOrParams = {}) => {
             completedAt: null,
         };
         }
+        const isLastSeason =
+  finishedSeason >= (show.totalSeasons || 1);
 
-              return {
-          ...show,
-          waitingForSeasonStart: true,
-          currentEpisodeStarted: false,
-          currentSeason: nextSeason,
-          currentEpisode: 1,
-          currentTime: 0,
-          lastWatchedAt: now,
-            seasonHistory,
-          };
+return {
+  ...show,
+
+  status: isLastSeason ? "completed" : show.status,
+  completedAt: isLastSeason ? now : show.completedAt,
+
+  waitingForSeasonStart: !isLastSeason,
+  currentEpisodeStarted: false,
+
+  currentSeason: isLastSeason
+    ? finishedSeason
+    : nextSeason,
+
+  currentEpisode: isLastSeason
+  ? finishedSeason === show.currentSeason
+    ? show.currentEpisode
+    : 1
+  : 1,
+
+  currentTime: 0,
+  lastWatchedAt: now,
+
+  seasonHistory,
+  };
       });
 
       const changed = updated.find(

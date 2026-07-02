@@ -105,15 +105,23 @@ const ShowDetails = ({
     show.seasons?.find((s) => s.seasonNumber === show.currentSeason)
       ?.episodeCount || 1;
 
-  const isSeasonLastEpisode = show.currentEpisode === currentSeasonEpisodes;
-
-  const isSeriesLastEpisode =
-    show.currentSeason === show.totalSeasons && isSeasonLastEpisode;
-
+  
   const currentEpisodeStarted = (show.watchHistory || []).some(
     (ep) =>
       ep.season === show.currentSeason && ep.episode === show.currentEpisode,
   );
+
+  const isLastEpisode =
+  show.currentEpisode === currentSeasonEpisodes;
+
+const isSeasonLastEpisode =
+  isLastEpisode && currentEpisodeStarted;
+
+  const isSeriesLastEpisode =
+  show.currentSeason === show.totalSeasons &&
+  isLastEpisode &&
+  currentEpisodeStarted;
+  
 
   const waitingForSeasonStart = show.waitingForSeasonStart;
 
@@ -434,11 +442,11 @@ const ShowDetails = ({
                               return;
                           }
 
-                          if (isSeriesLastEpisode) {
-                              updateShowStatus(show.id);
-                              return;
-                          }
-                          // updateEpisodeProgress(show.id, "increase");
+                          // if (isSeriesLastEpisode) {
+                          //     updateShowStatus(show.id);
+                          //     return;
+                          // }
+                          updateEpisodeProgress(show.id, "increase");
                         }}
                         className={`rounded-lg py-2 font-bold text-xs transition border border-transparent text-slate-950 ${
                           isSeasonLastEpisode
@@ -1492,10 +1500,15 @@ return {
     ? finishedSeason
     : nextSeason,
 
+  // currentEpisode: isLastSeason
+  // ? finishedSeason === show.currentSeason
+  //   ? show.currentEpisode
+  //   : 1
+  // : 1,
+
+
   currentEpisode: isLastSeason
-  ? finishedSeason === show.currentSeason
-    ? show.currentEpisode
-    : 1
+  ? show.currentEpisode
   : 1,
 
   currentTime: 0,

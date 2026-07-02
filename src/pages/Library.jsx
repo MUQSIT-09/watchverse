@@ -546,6 +546,8 @@ const ShowDetails = ({
                     ))}
                   </div>
 
+                  
+
                   <div className="space-y-1.5 text-xs">
                     <div className="flex justify-between">
                       <span className="text-slate-400">📺 {selectedSeasonData?.episodeCount} Episodes</span>
@@ -1418,10 +1420,18 @@ const updateEpisodeProgress = async (showId, actionOrParams = {}) => {
       }
 
       // For movies: if currentTime >= duration mark completed
-      if (show.type === "movie" && runtimeSeconds > 0 && show.currentTime >= runtimeSeconds) {
-        show.completedAt = show.completedAt || nowIso;
-        show.status = "completed";
-      }
+      if (show.type === "tv" && show.totalEpisodes > 0) {
+  const uniqueEpisodesWatched = new Set(
+    show.watchHistory?.map((ep) => `${ep.season}-${ep.episode}`) || []
+  ).size;
+
+  const isFullyCompleted = uniqueEpisodesWatched >= show.totalEpisodes;
+
+  if (isFullyCompleted) {
+    show.completedAt = show.completedAt || nowIso;
+    show.status = "completed";
+  }
+}
 
       // 👉 FIX: TV Shows auto-complete logic check to prevent active context corruption on last episode click
       if (show.type === "tv") {

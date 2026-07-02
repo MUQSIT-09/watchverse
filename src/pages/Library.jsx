@@ -1424,10 +1424,18 @@ const updateEpisodeProgress = async (showId, actionOrParams = {}) => {
       }
 
       // 👉 FIX: TV Shows auto-complete logic check to prevent active context corruption on last episode click
-      // if (show.type === "tv" && show.totalEpisodes > 0 && show.watchHistory?.length >= show.totalEpisodes) {
-      //   show.completedAt = show.completedAt || nowIso;
-      //   show.status = "completed";
-      // }
+      if (show.type === "tv") {
+  const total = show.totalEpisodes || 0;
+
+  const uniqueEpisodes = new Set(
+    show.watchHistory.map((e) => `${e.season}-${e.episode}`)
+  ).size;
+
+  if (total > 0 && uniqueEpisodes >= total) {
+    show.completedAt = show.completedAt || nowIso;
+    show.status = "completed";
+  }
+}
 
       return show;
     });

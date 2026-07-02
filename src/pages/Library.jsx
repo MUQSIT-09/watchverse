@@ -429,15 +429,16 @@ const ShowDetails = ({
                             updateEpisodeProgress(show.id, "start");
                             return;
                           }
-                          if (isSeriesLastEpisode) {
-                            updateShowStatus(show.id, "completed");
-                            return;
-                          }
                           if (isSeasonLastEpisode) {
-                            finishSeason(show.id);
-                            return;
+                              finishSeason(show.id);
+                              return;
                           }
-                          updateEpisodeProgress(show.id, "increase");
+
+                          if (isSeriesLastEpisode) {
+                              updateShowStatus(show.id);
+                              return;
+                          }
+                          // updateEpisodeProgress(show.id, "increase");
                         }}
                         className={`rounded-lg py-2 font-bold text-xs transition border border-transparent text-slate-950 ${
                           isSeasonLastEpisode
